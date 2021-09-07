@@ -52,24 +52,24 @@ SDP Management for enhanced performance
 - portCount : int
   
 ###### 1-3-1-3) Attribute (Mandatory)
-- RtpAttribute
+- RtpAttribute  
 payloadId : String  
 customAttributeFactory : AttributeFactory  
 rtpMapAttributeFactory : RtpMapAttributeFactory  
 fmtpAttributeFactoryList : List<FmtpAttributeFactory>  
   
-- AttributeFactory
+- AttributeFactory  
 type : char, 'a'  
 name : String  
 payloadId : String  
 value : String  
   
-- RtpMapAttributeFactory
+- RtpMapAttributeFactory  
 codecName : String  
 samplingRate : String  
 isOctetAlign : boolean  
   
-- FmtpAttributeFactory
+- FmtpAttributeFactory  
 modeSet : int  
 isOaMode : boolean  
   
