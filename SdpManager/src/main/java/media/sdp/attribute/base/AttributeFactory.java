@@ -14,6 +14,7 @@ public class AttributeFactory extends SdpFactory {
     String name;
     String payloadId = null;
     String value;
+    String valueExceptPayloadId = null;
 
     ////////////////////////////////////////////////////////////////////////////////
 
@@ -22,6 +23,7 @@ public class AttributeFactory extends SdpFactory {
         this.name = name;
 
         if (value != null) {
+            value = value.trim();
             String[] spl = value.split(" ");
             if (spl.length == 0) {
                 payloadId = name + ":" + value;
@@ -29,6 +31,15 @@ public class AttributeFactory extends SdpFactory {
                 for (String mediaFormat : mediaFormats) {
                     if (mediaFormat.equals(spl[0])) {
                         payloadId = spl[0];
+                        StringBuilder valueSb = new StringBuilder();
+                        valueSb.append(" ");
+                        for (int i = 1; i < spl.length; i++) {
+                            valueSb.append(spl[i]);
+                            if (i + 1 < spl.length) {
+                                valueSb.append(" ");
+                            }
+                        }
+                        valueExceptPayloadId = valueSb.toString();
                         break;
                     }
                 }
@@ -74,6 +85,14 @@ public class AttributeFactory extends SdpFactory {
 
     public void setValue(String value) {
         this.value = value;
+    }
+
+    public String getValueExceptPayloadId() {
+        return valueExceptPayloadId;
+    }
+
+    public void setValueExceptPayloadId(String valueExceptPayloadId) {
+        this.valueExceptPayloadId = valueExceptPayloadId;
     }
 
     ////////////////////////////////////////////////////////////////////////////////

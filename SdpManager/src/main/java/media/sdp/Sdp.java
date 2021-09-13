@@ -277,7 +277,7 @@ public class Sdp {
 
     ////////////////////////////////////////////////////////////////////////////////
 
-    public boolean intersect (String mediaType, String callId, Sdp otherSdp) {
+    public boolean intersect (String mediaType, String callId, Sdp otherSdp, boolean isRelay) {
         if (mediaType == null || callId == null || otherSdp == null) {
             return false;
         }
@@ -306,79 +306,73 @@ public class Sdp {
                 }
 
                 // 1) Codec Name Matched
-                if (otherRtpMapAttributeFactory.getCodecName().equals(curRtpMapAttributeFactory.getCodecName())) {
+                if (otherRtpMapAttributeFactory.getCodecName().equals(curRtpMapAttributeFactory.getCodecName())
+                        && otherRtpMapAttributeFactory.getSamplingRate().equals(curRtpMapAttributeFactory.getSamplingRate())) {
                     //logger.debug("other: {}, cur: {}", otherAttributeFactory.getCodecName(), curAttributeFactory.getCodecName());
 
-                    // DTMF
-                    if (curRtpMapAttributeFactory.getCodecName().equals(RtpMapAttributeFactory.DTMF)) {
-                        if (curRtpAttribute.getFmtpAttributeFactoryList().size() == 0 &&
-                                otherRtpAttribute.getFmtpAttributeFactoryList().size() > 0) {
-                            for (FmtpAttributeFactory fmtpAttributeFactory : otherRtpAttribute.getFmtpAttributeFactoryList()) {
-                                String value = fmtpAttributeFactory.getValue();
-                                value = value.substring(value.indexOf(" ") + 1);
-
-                                curRtpAttribute.addFmtpAttributeFactory(
-                                        new FmtpAttributeFactory(
-                                                fmtpAttributeFactory.getType(),
-                                                fmtpAttributeFactory.getName(),
-                                                curRtpAttribute.getPayloadId() + " " + value,
-                                                this.mediaDescriptionFactory.getMediaFactory(mediaType).
-                                                        getMediaField().getMediaFormats()
-                                        )
-                                );
-                            }
-                        }
-                    }
-                    // CODEC
-                    else {
-                        // 2) Mode-set Match
-                        // Mode-set 둘 다 가지고 있을 때만 협상
-                        FmtpAttributeFactory otherModeSetAttribute = otherRtpAttribute.getModeSetAttribute();
-                        FmtpAttributeFactory curModeSetAttribute = curRtpAttribute.getModeSetAttribute();
-                        if (otherModeSetAttribute != null && curModeSetAttribute != null) {
-                            int otherModeSet = otherModeSetAttribute.getModeSet();
-                            int curModeSet = curModeSetAttribute.getModeSet();
-
-                            if (otherModeSet < curModeSet) {
-                                curModeSetAttribute.setModeSet(otherModeSet);
-                                logger.debug("({}) [{}] sdp's mode-set ({}) is changed. ({} > {})",
-                                        id, callId, otherRtpMapAttributeFactory.getCodecName(),
-                                        curModeSet, curModeSetAttribute.getModeSet()
-                                );
-                            }
-                        }
-
-                        if (curModeSetAttribute == null && otherModeSetAttribute != null) {
+                    if (isRelay) {
+                        curRtpAttribute.clearFmtpAttributeFactoryList();
+                        for (FmtpAttributeFactory fmtpAttributeFactory : otherRtpAttribute.getFmtpAttributeFactoryList()) {
                             curRtpAttribute.addFmtpAttributeFactory(
                                     new FmtpAttributeFactory(
-                                            otherModeSetAttribute.getType(),
+                                            fmtpAttributeFactory.getType(),
                                             MediaFactory.FMTP,
-                                            curRtpAttribute.getPayloadId() + " mode-set=" + otherModeSetAttribute.getModeSet(),
-                                            this.mediaDescriptionFactory.getMediaFactory(mediaType).getMediaField().getMediaFormats()
-                                    )
-                            );
-                        }
-
-                        // 3) Octet-align Match
-                        if (!curRtpAttribute.isOctetAlignMode() && otherRtpAttribute.isOctetAlignMode()) {
-                            curRtpMapAttributeFactory.setOctetAlign(true);
-                            logger.debug("({}) [{}] sdp's octet-align ({}) is changed. (0 > 1)",
-                                    id, callId, curRtpMapAttributeFactory.getCodecName()
-                            );
-                        }
-
-                        FmtpAttributeFactory otherOaAttribute = otherRtpAttribute.getOctetAlignAttribute();
-                        FmtpAttributeFactory curOaAttribute = curRtpAttribute.getOctetAlignAttribute();
-                        if (curOaAttribute == null && otherOaAttribute != null) {
-                            curRtpAttribute.addFmtpAttributeFactory(
-                                    new FmtpAttributeFactory(
-                                            otherOaAttribute.getType(),
-                                            MediaFactory.FMTP,
-                                            curRtpAttribute.getPayloadId() + " octet-align=" + (otherOaAttribute.isOaMode()? 1 : 0),
+                                            curRtpAttribute.getPayloadId() + fmtpAttributeFactory.getValueExceptPayloadId(),
                                             this.mediaDescriptionFactory.getMediaFactory(mediaType).
                                                     getMediaField().getMediaFormats()
                                     )
                             );
+                            logger.debug("({}) Other FMTP [{}] is set-up.", id, fmtpAttributeFactory.getData());
+                        }
+                    } else {
+                        // DTMF
+                        FmtpAttributeFactory curModeSetAttribute = curRtpAttribute.getModeSetAttribute();
+                        curRtpAttribute.clearFmtpAttributeFactoryList();
+
+                        if (curModeSetAttribute != null) {
+                            int curModeSet = curModeSetAttribute.getModeSetMax();
+                            if (curModeSet >= 0) {
+                                //FmtpAttributeFactory fmtpAttributeFactory = otherRtpAttribute.getFmtpAttributeFactoryList().get(0);
+                                FmtpAttributeFactory fmtpAttributeFactory = otherRtpAttribute.getFirstModeSetFmtpAttributeFactory();
+                                if (fmtpAttributeFactory != null) {
+                                    String valueStr;
+                                    int amfModeSet = fmtpAttributeFactory.getModeSetMax();
+                                    if (fmtpAttributeFactory.getModeSetMax() >= 0) {
+                                        int resultModeSet = curModeSet;
+                                        if (resultModeSet > amfModeSet) {
+                                            //resultModeSet = amfModeSet;
+                                            resultModeSet = curModeSetAttribute.getModeSetMin();
+                                        }
+                                        valueStr = curRtpAttribute.getPayloadId() + (fmtpAttributeFactory.isOaMode() ? " octet-align=1;" : "") + " mode-set=" + resultModeSet;
+                                    } else {
+                                        valueStr = curRtpAttribute.getPayloadId() + fmtpAttributeFactory.getValueExceptPayloadId() + "; mode-set=" + curModeSet;
+                                    }
+
+                                    FmtpAttributeFactory newFmtpAttributeFactory = new FmtpAttributeFactory(
+                                            fmtpAttributeFactory.getType(),
+                                            MediaFactory.FMTP,
+                                            valueStr,
+                                            this.mediaDescriptionFactory.getMediaFactory(mediaType).
+                                                    getMediaField().getMediaFormats()
+                                    );
+
+                                    curRtpAttribute.addFmtpAttributeFactory(newFmtpAttributeFactory);
+                                    logger.debug("({}) Local FMTP [{}] is set-up.", id, newFmtpAttributeFactory.getData());
+                                }
+                            }
+                        } else {
+                            for (FmtpAttributeFactory fmtpAttributeFactory : otherRtpAttribute.getFmtpAttributeFactoryList()) {
+                                FmtpAttributeFactory newFmtpAttributeFactory = new FmtpAttributeFactory(
+                                        fmtpAttributeFactory.getType(),
+                                        MediaFactory.FMTP,
+                                        curRtpAttribute.getPayloadId() + fmtpAttributeFactory.getValueExceptPayloadId(),
+                                        this.mediaDescriptionFactory.getMediaFactory(mediaType).
+                                                getMediaField().getMediaFormats()
+                                );
+
+                                curRtpAttribute.addFmtpAttributeFactory(newFmtpAttributeFactory);
+                                logger.debug("({}) Local FMTP [{}] is set-up.", id, newFmtpAttributeFactory.getData());
+                            }
                         }
                     }
 

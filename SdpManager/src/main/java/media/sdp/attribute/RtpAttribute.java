@@ -50,6 +50,16 @@ public class RtpAttribute {
         this.rtpMapAttributeFactory = rtpMapAttributeFactory;
     }
 
+    public FmtpAttributeFactory getFirstModeSetFmtpAttributeFactory() {
+        for (FmtpAttributeFactory modeSetFmtpAttributeFactory : fmtpAttributeFactoryList) {
+            if (!modeSetFmtpAttributeFactory.getModeSetList().isEmpty()) {
+                return modeSetFmtpAttributeFactory;
+            }
+        }
+
+        return null;
+    }
+
     public List<FmtpAttributeFactory> getFmtpAttributeFactoryList() {
         return fmtpAttributeFactoryList;
     }
@@ -60,6 +70,10 @@ public class RtpAttribute {
         }
 
         fmtpAttributeFactoryList.add(0, fmtpAttributeFactory);
+    }
+
+    public void clearFmtpAttributeFactoryList() {
+        fmtpAttributeFactoryList.clear();
     }
 
     ////////////////////////////////////////////////////////////////////////////////

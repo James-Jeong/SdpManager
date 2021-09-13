@@ -273,9 +273,16 @@ public class MediaFactory extends SdpFactory {
 
         // CUSTOM
         List<RtpAttribute> rtpAttributeList = new ArrayList<>(attributeFactoryMap.values());
-        Collections.reverse(rtpAttributeList);
         for (RtpAttribute rtpAttribute : rtpAttributeList) {
             if (!mediaField.getMediaFormats().contains(rtpAttribute.getPayloadId())) {
+                AttributeFactory attributeFactory = rtpAttribute.getCustomAttributeFactory();
+                if (attributeFactory != null &&
+                        (attributeFactory.getName().equals("visited-realm") ||
+                                attributeFactory.getName().equals("omr-m-cksum") ||
+                                attributeFactory.getName().equals("omr-s-cksum"))) {
+                    continue;
+                }
+
                 data.append(rtpAttribute.getData());
             }
         }
