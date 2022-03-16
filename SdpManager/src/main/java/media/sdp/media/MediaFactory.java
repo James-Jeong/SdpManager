@@ -115,6 +115,8 @@ public class MediaFactory extends SdpFactory {
                     payloadId,
                     rtpAttribute
             );
+        } else {
+            rtpAttribute.setCustomAttributeFactory(attributeFactory);
         }
     }
 
@@ -135,6 +137,8 @@ public class MediaFactory extends SdpFactory {
                     payloadId,
                     rtpAttribute
             );
+        } else {
+            rtpAttribute.setRtpMapAttributeFactory(rtpMapAttributeFactory);
         }
     }
 
@@ -146,6 +150,15 @@ public class MediaFactory extends SdpFactory {
 
         RtpAttribute rtpAttribute = attributeFactoryMap.get(payloadId);
         if (rtpAttribute != null) {
+            if (fmtpAttributeFactory.getName().equals(FMTP)) {
+                rtpAttribute.addFmtpAttributeFactory(fmtpAttributeFactory);
+            }
+        } else {
+            rtpAttribute = new RtpAttribute(payloadId);
+            attributeFactoryMap.putIfAbsent(
+                    payloadId,
+                    rtpAttribute
+            );
             if (fmtpAttributeFactory.getName().equals(FMTP)) {
                 rtpAttribute.addFmtpAttributeFactory(fmtpAttributeFactory);
             }
